@@ -5,28 +5,63 @@ import math
 
 def main():
     #An array of a stock's past prices taken on the first of every month
-    stockPast = [0,.01,1.43,2,5,8,10,8,12,7,2]
+    stockPast = [150.32, 152.45, 149.87, 153.22, 148.76, 151.90, 150.78, 154.67, 155.23, 149.99]
+    growthStandard = [1,1.2,1.3,1.4,1.5,1.5,1.6,1.7]
+
     isGoodInvestment(stockPast)
+    #isGoodInvestment(stockPast)
 
 #Calculates the percent growth of a stock starting at a specific month
-def calcFutureValue(pastValue,startSpot = 0,):
-    growthSinceStart = 0
-    sum = 0
-    for i in range(startSpot,len(pastValue)):
-        sum += pastValue[i]
-    growthSinceStart = sum / len(pastValue)
-    return growthSinceStart
+def growthSinceStart(pastValue,startSpot = 0, endSpot = 100):
+    monthToMonthGrowth = []
+    averageMonthToMonthGrowth = 0
+    startSpot += 1
+    for i in range(startSpot, endSpot-1):
+        if pastValue[i-1] > 0:
+            monthToMonthGrowth.append((pastValue[i]/pastValue[i-1]))
+        else: 
+            print("Error, stock can not be valued at zero")
+    for percent in monthToMonthGrowth:
+        averageMonthToMonthGrowth += percent
+    if len(monthToMonthGrowth) > 0:
+        averageMonthToMonthGrowth = averageMonthToMonthGrowth/len(monthToMonthGrowth)
+    else: 
+        averageMonthToMonthGrowth = averageMonthToMonthGrowth
+    return averageMonthToMonthGrowth
+
+def findVolatility(pastValues):
+    growthRates = []
+    for i in range(1, len(pastValues)):
+        growthRates.append((pastValues[i] - pastValues[i - 1]) / pastValues[i - 1])
+    # Calculate standard deviation of the growth rates
+    meanGrowth = sum(growthRates) / len(growthRates)
+    variance = sum((x - meanGrowth) ** 2 for x in growthRates) / len(growthRates)
+    return math.sqrt(variance)
+
+def calculateSharpeRatio(stockReturn, riskFreeReturn, volatility):
+    return (stockReturn - riskFreeReturn) / volatility
+
+def compoundedGrowth(pastValues, startSpot=0, endSpot=100):
+    startValue = pastValues[startSpot]
+    endValue = pastValues[endSpot - 1]
+    months = endSpot - startSpot
+    if startValue > 0:
+        return (endValue / startValue) ** (1 / months) - 1
+    else:
+        return 0
 
 def isGoodInvestment(stockPast):
-    totalGrowth = [calcFutureValue(stockPast),1]
-    halfRecentGrowth = [calcFutureValue(stockPast,math.floor(len(stockPast) / 2)),2]
-    quarterRecentGrowth = [calcFutureValue(stockPast,math.floor(len(stockPast) / 4)),3]
-    lastMonthGrowth  = [calcFutureValue(stockPast,(len(stockPast)-1)),5]
+    totalGrowth = compoundedGrowth(stockPast)
+    volatility = findVolatility(stockPast)
+    sharpeRatio = calculateSharpeRatio(totalGrowth, 0.02, volatility)  # Assuming 2% risk-free rate
+    
+    print(f"Total Growth: {totalGrowth}, Volatility: {volatility}, Sharpe Ratio: {sharpeRatio}")
+    
+    # Decision-making criteria
+    if sharpeRatio > 1 and totalGrowth > 1.05:
+        return True
+    return False
 
-    print(totalGrowth)
-    print(halfRecentGrowth)
-    print(quarterRecentGrowth)
-    print(lastMonthGrowth)
 
 
 if __name__ == '__main__':
